@@ -54,6 +54,7 @@ response:
         try:
             response = await self.model.with_structured_output(GeneratorResponse).ainvoke(messages)
             print(f"Generated {response.agent_name}")
+            print(f"Generated prompt: {response.agent_prompt}")
             return {
                 "agent":
                     {

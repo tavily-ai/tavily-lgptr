@@ -5,3 +5,4 @@ class ResearchState(TypedDict):
     agent: dict
     research_data: Dict[str, Dict[str, Union[str, float]]]
     curated_data: Dict[str, Dict[str, Union[str, float]]]
+    report: str
