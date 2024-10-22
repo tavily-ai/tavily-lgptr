@@ -1,1 +1,1 @@
-# tavily-lgptr
+# Tavily Light GPT Researcher
