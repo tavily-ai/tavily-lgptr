@@ -8,8 +8,13 @@ import asyncio
 
 from memory.research import ResearchState
 
+class RankedSource(BaseModel):
+    url: str = Field(description="The URL of the source")
+    rank: int = Field(description="Rank of the source (1 being the highest)")
+    reason: str = Field(description="Brief explanation for the ranking")
+
 class TavilyExtractInput(BaseModel):
-    urls: List[str] = Field(description="list of a single or several URLs for extracting raw content to gather additional information")
+    ranked_sources: List[RankedSource] = Field(description="List of ranked sources, ordered by relevance, trustworthiness, and reliability")
 
 class CurateAgent:
     def __init__(self):
@@ -17,23 +22,30 @@ class CurateAgent:
         self.tavily_client = AsyncTavilyClient()
 
     async def run(self, state: ResearchState):
-        # TODO maybe change this to use a better rank & filter mechanism
-        """
-        Selects the most relevant search documents for curation, then uses Tavily Extract to obtain additional context.
-        :param state:
-        :return:
-        """
         print("In curate agent")
         system_prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
         {state['agent']['prompt']}.\n
-        Your current task is to review a list of documents and select the most relevant URLs related to the following research task: {state['task']['query']}.\n
-        Here is the list of documents gathered for your review:\n{state['research_data']}\n\n"""
-        messages = [SystemMessage(content=system_prompt)]
-        relevant_urls = self.model.with_structured_output(TavilyExtractInput).invoke(messages)
-        print(f"Selected the following urls {relevant_urls.urls}")
+        Your current task is to review a list of documents and select the most relevant, trusted, and reliable sources related to the following research task: {state['task']['query']}.\n
+        
+        Please follow these guidelines:
+        1. Evaluate each source based on its relevance to the query, credibility, and reliability.
+        2. Consider factors such as the author's expertise, the publication's reputation, the recency of the information, and the presence of citations or references.
+        3. Rank the sources in order of their overall quality and relevance, with 1 being the highest rank.
+        4. Provide a brief reason for each ranking.
+        5. Select up to 10 of the best sources.
 
-        # Create a dictionary of relevant documents based on the URLs returned by the model
-        curated_data = {url: state['research_data'][url] for url in relevant_urls.urls if url in state['research_data']}
+        Here is the list of documents gathered for your review:\n{state['research_data']}\n\n
+        
+        Respond with a ranked list of the best sources, including their URLs, ranks, and reasons for ranking.
+        """
+        messages = [SystemMessage(content=system_prompt)]
+        ranked_sources = self.model.with_structured_output(TavilyExtractInput).invoke(messages)
+        print(f"Selected and ranked the following sources:")
+        for source in ranked_sources.ranked_sources:
+            print(f"Rank {source.rank}: {source.url} - {source.reason}")
+
+        # Create a dictionary of relevant documents based on the ranked sources
+        curated_data = {source.url: state['research_data'][source.url] for source in ranked_sources.ranked_sources if source.url in state['research_data']}
         msg = ""
 
         # Process URLs in batches of 20
@@ -55,7 +67,8 @@ class CurateAgent:
                 return f"Error occurred during Tavily Extract request for batch: {e}\n"
 
         # Split URLs into batches of 20
-        url_batches = [relevant_urls.urls[i:i + 20] for i in range(0, len(relevant_urls.urls), 20)]
+        url_batches = [source.url for source in ranked_sources.ranked_sources]
+        url_batches = [url_batches[i:i + 20] for i in range(0, len(url_batches), 20)]
 
         # Process all batches in parallel
         results = await asyncio.gather(*[process_batch(batch) for batch in url_batches])
@@ -64,5 +77,3 @@ class CurateAgent:
         msg += "Extracted raw content for:\n" + "".join(results)
         print(msg)
         return {"curated_data": curated_data}
-
-
