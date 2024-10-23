@@ -11,7 +11,6 @@ from memory.research import ResearchState
 class RankedSource(BaseModel):
     url: str = Field(description="The URL of the source")
     rank: int = Field(description="Rank of the source (1 being the highest)")
-    reason: str = Field(description="Brief explanation for the ranking")
 
 class TavilyExtractInput(BaseModel):
     ranked_sources: List[RankedSource] = Field(description="List of ranked sources, ordered by relevance, trustworthiness, and reliability")
@@ -36,13 +35,13 @@ class CurateAgent:
 
         Here is the list of documents gathered for your review:\n{state['research_data']}\n\n
         
-        Respond with a ranked list of the best sources, including their URLs, ranks, and reasons for ranking.
+        Respond with a ranked list of the best sources, including their URLs and ranks.
         """
         messages = [SystemMessage(content=system_prompt)]
         ranked_sources = self.model.with_structured_output(TavilyExtractInput).invoke(messages)
         print(f"Selected and ranked the following sources:")
         for source in ranked_sources.ranked_sources:
-            print(f"Rank {source.rank}: {source.url} - {source.reason}")
+            print(f"Rank {source.rank}: {source.url}")
 
         # Create a dictionary of relevant documents based on the ranked sources
         curated_data = {source.url: state['research_data'][source.url] for source in ranked_sources.ranked_sources if source.url in state['research_data']}

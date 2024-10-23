@@ -38,7 +38,6 @@ class SearchAgent:
         # Define a coroutine function to perform a single search with error handling
         async def perform_search(itm):
             try:
-                print("Tavily searching ", itm)
                 # Add date to the query as we need the most recent results
                 query_with_date = f"{itm.query} {datetime.now().strftime('%m-%Y')}"
                 # Attempt to perform the search, hardcoding days to 7 (days will be used only when topic is news)
@@ -83,9 +82,7 @@ class SearchAgent:
             Consider any current events, recent developments, or specific details mentioned in the context that could enhance the search queries.
             
             Assume the current date is {datetime.now(timezone.utc).strftime('%B %d, %Y')} if required.
-            
-            You must respond with a list of strings in the following format: [{", ".join([f'"query {i+1}"' for i in range(max_queries)])}].
-            The response should contain ONLY the list.
+            The response should contain ONLY the list of search queries.
         """
         messages = [SystemMessage(content=system_prompt)]
         try:
