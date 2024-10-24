@@ -6,14 +6,15 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 import asyncio
 
-from memory.research import ResearchState
+from .memory.research import ResearchState
 
 class RankedSource(BaseModel):
     url: str = Field(description="The URL of the source")
     rank: int = Field(description="Rank of the source (1 being the highest)")
 
 class TavilyExtractInput(BaseModel):
-    ranked_sources: List[RankedSource] = Field(description="List of ranked sources, ordered by relevance, trustworthiness, and reliability")
+    ranked_sources: List[RankedSource] = Field(description="List of ranked sources, "
+                                                           "ordered by relevance, trustworthiness, and reliability")
 
 class CurateAgent:
     def __init__(self):
@@ -24,11 +25,13 @@ class CurateAgent:
         print("In curate agent")
         system_prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
         {state['agent']['prompt']}.\n
-        Your current task is to review a list of documents and select the most relevant, trusted, and reliable sources related to the following research task: {state['task']['query']}.\n
+        Your current task is to review a list of documents and select the most relevant, trusted, and reliable sources 
+        related to the following research task: {state['task']['query']}.\n
         
         Please follow these guidelines:
         1. Evaluate each source based on its relevance to the query, credibility, and reliability.
-        2. Consider factors such as the author's expertise, the publication's reputation, the recency of the information, and the presence of citations or references.
+        2. Consider factors such as the author's expertise, the publication's reputation, 
+            and the recency of the information.
         3. Rank the sources in order of their overall quality and relevance, with 1 being the highest rank.
         4. Provide a brief reason for each ranking.
         5. Select up to 10 of the best sources.
@@ -44,7 +47,8 @@ class CurateAgent:
             print(f"Rank {source.rank}: {source.url}")
 
         # Create a dictionary of relevant documents based on the ranked sources
-        curated_data = {source.url: state['research_data'][source.url] for source in ranked_sources.ranked_sources if source.url in state['research_data']}
+        curated_data = {source.url: state['research_data'][source.url] for source in
+                        ranked_sources.ranked_sources if source.url in state['research_data']}
         msg = ""
 
         # Process URLs in batches of 20

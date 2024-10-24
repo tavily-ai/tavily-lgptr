@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 import asyncio
 
-from memory.research import ResearchState
+from .memory.research import ResearchState
 
 
 # Define Tavily's arguments to enhance the search dynamism
@@ -25,7 +25,7 @@ class TavilySearchInput(BaseModel):
 
 class SearchAgent:
     def __init__(self):
-        self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.model = ChatOpenAI(model="gpt-4o", temperature=0.4)
         self.queries: List[TavilyQuery] = []
         self.tavily_client = AsyncTavilyClient()
 

@@ -2,7 +2,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 from langchain_core.messages import SystemMessage, HumanMessage
 
-from memory.research import ResearchState
+from .memory.research import ResearchState
 
 
 class GeneratorResponse(BaseModel):

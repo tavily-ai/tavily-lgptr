@@ -3,7 +3,7 @@ from langchain_openai import ChatOpenAI
 from typing import List
 from langchain_core.messages import SystemMessage, HumanMessage
 from datetime import datetime
-from memory.research import ResearchState
+from .memory.research import ResearchState
 
 class Citation(BaseModel):
     source_id: str = Field(description="The url of a SPECIFIC source which justifies the answer.")
@@ -18,7 +18,7 @@ class WriteAgent:
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4, max_tokens=8000)
 
-    def run(self, state: ResearchState, total_words: int = 500):
+    def run(self, state: ResearchState, total_words: int = 500, include_citations=False):
         # TODO implement a general structure for the report (similar to the way it was done in GPT researcher"
         print(f"✍️ Writing report for '{state['task']['query']}' ...")
         prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
@@ -32,11 +32,14 @@ class WriteAgent:
         messages = [SystemMessage(content=prompt)]
         response = self.model.with_structured_output(QuotedAnswer).invoke(messages)
         full_report = response.answer
-        # Add Citations Section to the report and save sources
-        full_report += "\n\n### Citations\n"
-        # sources = {}
-        for citation in response.citations:
-            doc = state['curated_data'].get(citation.source_id)
-            full_report += f"- [{doc.get('title', citation.source_id)}]({citation.source_id}): \"{citation.quote}\"\n"
+
+        if include_citations:
+            # Add Citations Section to the report and save sources
+            full_report += "\n\n### Citations\n"
+            # sources = {}
+            for citation in response.citations:
+                doc = state['curated_data'].get(citation.source_id)
+                full_report += f"- [{doc.get('title', citation.source_id)}]({citation.source_id}): \"{citation.quote}\"\n"
+
         print("Genereated report:\n",full_report)
         return {"report": full_report}
