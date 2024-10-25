@@ -2,7 +2,9 @@ import asyncio
 from agents.master import MasterAgent
 
 from dotenv import load_dotenv
-load_dotenv('.env.local')
+
+load_dotenv('.env')
+
 
 async def main():
     master_agent = MasterAgent()
@@ -11,6 +13,7 @@ async def main():
         "query": query
     }
     await master_agent.run(task)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

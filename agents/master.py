@@ -1,5 +1,4 @@
-import asyncio
-from langgraph.graph import StateGraph, END, add_messages
+from langgraph.graph import StateGraph, END
 
 from .generate import GenerateAgent
 from .search import SearchAgent
@@ -37,7 +36,13 @@ class MasterAgent:
 
     async def run(self, task: dict):
         # compile the graph
-        chain = self.workflow.compile()
+        graph = self.workflow.compile()
 
         # just invoke
-        await chain.ainvoke({"task": task})
+        await graph.ainvoke({"task": task})
+
+    def compile(self):
+        # compile the graph and return it (for LangGraph Studio)
+        graph = self.workflow.compile()
+        return graph
+
