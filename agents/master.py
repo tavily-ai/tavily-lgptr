@@ -1,14 +1,12 @@
 import asyncio
 from langgraph.graph import StateGraph, END, add_messages
 
-from generate import GenerateAgent
-from search import SearchAgent
-from curate import CurateAgent
-from write import WriteAgent
-from memory.research import ResearchState
+from .generate import GenerateAgent
+from .search import SearchAgent
+from .curate import CurateAgent
+from .write import WriteAgent
+from .memory.research import ResearchState
 
-from dotenv import load_dotenv
-load_dotenv('../.env.local')
 class MasterAgent:
     def __init__(self):
         # Initialize agents
@@ -38,25 +36,8 @@ class MasterAgent:
         self.workflow = workflow
 
     async def run(self, task: dict):
-
         # compile the graph
         chain = self.workflow.compile()
 
-        # stram events
-        # async for event in chain.astream_events({"task": task}, version="v2"):
-        #     if event["event"] == 'on_chain_start':
-        #         print(event)
-
         # just invoke
         await chain.ainvoke({"task": task})
-
-async def main():
-    master_agent = MasterAgent()
-    _query = input("What do you want to research?\n")
-    task = {
-        "query": _query
-    }
-    await master_agent.run(task)
-
-if __name__ == "__main__":
-    asyncio.run(main())

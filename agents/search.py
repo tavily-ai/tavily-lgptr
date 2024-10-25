@@ -3,10 +3,10 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import asyncio
 
-from memory.research import ResearchState
+from .memory.research import ResearchState
 
 
 # Define Tavily's arguments to enhance the search dynamism
@@ -25,7 +25,7 @@ class TavilySearchInput(BaseModel):
 
 class SearchAgent:
     def __init__(self):
-        self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.model = ChatOpenAI(model="gpt-4o", temperature=0.4)
         self.queries: List[TavilyQuery] = []
         self.tavily_client = AsyncTavilyClient()
 
@@ -38,7 +38,6 @@ class SearchAgent:
         # Define a coroutine function to perform a single search with error handling
         async def perform_search(itm):
             try:
-                print("Tavily searching ", itm)
                 # Add date to the query as we need the most recent results
                 query_with_date = f"{itm.query} {datetime.now().strftime('%m-%Y')}"
                 # Attempt to perform the search, hardcoding days to 7 (days will be used only when topic is news)
@@ -62,7 +61,7 @@ class SearchAgent:
 
         return search_results
 
-    async def generate_search_queries(self, agent, query):
+    async def generate_search_queries(self, agent, query, max_queries=4):
         """
         Generate search queries using the agent's persona and the initial query.
 
@@ -70,12 +69,21 @@ class SearchAgent:
         :param query: The original user query.
         :return: A list of search queries (structured in a list of TavilyQuery instances).
         """
+
+        initial_search_results = await self.tavily_search([TavilyQuery(query=query, topic='general')])
+
         system_prompt = f"""
-              {agent['prompt']}
-              Based on the following original query: "{query}", generate a set of 3 to 5 precise and actionable search queries 
-              that align with your role and the nature of the user provided query. It is often useful to use a combination of both general and news search 
-              You should provide relevant 'days' for a 'news' search if applicable.
-              """
+            {agent['prompt']}
+            You are a tasked tasked with generating search queries to find relevant information for the following task: "{query}".
+            Context: {initial_search_results}
+            
+            Use this context to inform and refine your search queries. 
+            The context provides real-time web information that can help you generate more specific and relevant queries. 
+            Consider any current events, recent developments, or specific details mentioned in the context that could enhance the search queries.
+            
+            Assume the current date is {datetime.now(timezone.utc).strftime('%B %d, %Y')} if required.
+            The response should contain ONLY the list of search queries.
+        """
         messages = [SystemMessage(content=system_prompt)]
         try:
             response = await self.model.with_structured_output(TavilySearchInput).ainvoke(messages)
