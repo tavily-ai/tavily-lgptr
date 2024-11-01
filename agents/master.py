@@ -1,11 +1,7 @@
 from langgraph.graph import StateGraph, END
 
-from .config.config import Config
-from .generate import GenerateAgent
-from .search import SearchAgent
-from .curate import CurateAgent
-from .write import WriteAgent
-from .memory.research import ResearchState
+from . import GenerateAgent, SearchAgent, CurateAgent, WriteAgent, Config, ResearchState
+
 
 class MasterAgent:
     def __init__(self):
