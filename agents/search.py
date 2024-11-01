@@ -24,13 +24,10 @@ class TavilySearchInput(BaseModel):
 
 
 class SearchAgent:
-    def __init__(self):
+    def __init__(self, max_queries):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4)
-        self.queries: List[TavilyQuery] = []
         self.tavily_client = AsyncTavilyClient()
-
-    # async def run_init_search(self, query):
-    #     response = await self.tavily_client.search(query=query)
+        self.MAX_QUERIES = max_queries
 
     async def tavily_search(self, sub_queries: List[TavilyQuery]):
         """Perform searches for each sub-query using the Tavily search tool concurrently."""
@@ -40,7 +37,7 @@ class SearchAgent:
             try:
                 # Add date to the query as we need the most recent results
                 query_with_date = f"{itm.query} {datetime.now().strftime('%m-%Y')}"
-                # Attempt to perform the search, hardcoding days to 7 (days will be used only when topic is news)
+                # Attempt to perform the search
                 response = await self.tavily_client.search(query=query_with_date, topic=itm.topic, days=itm.days,
                                                            max_results=10)
                 return response['results']
@@ -61,7 +58,7 @@ class SearchAgent:
 
         return search_results
 
-    async def generate_search_queries(self, agent, query, max_queries=4):
+    async def generate_search_queries(self, agent, query):
         """
         Generate search queries using the agent's persona and the initial query.
 
@@ -74,7 +71,7 @@ class SearchAgent:
 
         system_prompt = f"""
             {agent['prompt']}
-            You are a tasked tasked with generating search queries to find relevant information for the following task: "{query}".
+            You are a tasked tasked with generating {self.MAX_QUERIES-1} search queries to find relevant information for the following task: "{query}".
             Context: {initial_search_results}
             
             Use this context to inform and refine your search queries. 
@@ -87,15 +84,16 @@ class SearchAgent:
         messages = [SystemMessage(content=system_prompt)]
         try:
             response = await self.model.with_structured_output(TavilySearchInput).ainvoke(messages)
-            return response.sub_queries
+            return response.sub_queries, initial_search_results
         except Exception as e:
-            print("⚠️ Error in reading generating search queries to Tavily")
-            return []
+            print("⚠️ Error in generating search queries to Tavily")
+            return [], initial_search_results
 
     async def run(self, state: ResearchState):
         print("In search agent")
-        sub_queries = await self.generate_search_queries(state['agent'], state['task']['query'])
+        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['task']['query'])
         search_results = await self.tavily_search(sub_queries)
+        search_results.extend(initial_search_results)
         # Save search results
         docs = state.get('research_data', {})
         for doc in search_results:

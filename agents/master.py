@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, END
 
+from .config.config import Config
 from .generate import GenerateAgent
 from .search import SearchAgent
 from .curate import CurateAgent
@@ -8,10 +9,11 @@ from .memory.research import ResearchState
 
 class MasterAgent:
     def __init__(self):
+        cfg = Config()
         # Initialize agents
         generate_agent = GenerateAgent()
-        search_agent = SearchAgent()
-        curate_agent = CurateAgent()
+        search_agent = SearchAgent(cfg.MAX_SEARCH_QUERIES)
+        curate_agent = CurateAgent(cfg.MAX_CURATED_DOCS)
         write_agent = WriteAgent()
 
         # Define a Langchain graph

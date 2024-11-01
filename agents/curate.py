@@ -17,9 +17,10 @@ class TavilyExtractInput(BaseModel):
                                                            "ordered by relevance, trustworthiness, and reliability")
 
 class CurateAgent:
-    def __init__(self):
+    def __init__(self, max_docs):
         self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         self.tavily_client = AsyncTavilyClient()
+        self.MAX_DOCS = max_docs
 
     async def run(self, state: ResearchState):
         print("In curate agent")
@@ -34,7 +35,7 @@ class CurateAgent:
             and the recency of the information.
         3. Rank the sources in order of their overall quality and relevance, with 1 being the highest rank.
         4. Provide a brief reason for each ranking.
-        5. Select up to 10 of the best sources.
+        5. Select up to {self.MAX_DOCS} of the best sources.
 
         Here is the list of documents gathered for your review:\n{state['research_data']}\n\n
         

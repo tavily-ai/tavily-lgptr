@@ -33,13 +33,17 @@ class WriteAgent:
         response = self.model.with_structured_output(QuotedAnswer).invoke(messages)
         full_report = response.answer
 
+
+        # Add Citations Section to the report and Save quotes used by the agent to support their answer
         if include_citations:
-            # Add Citations Section to the report and save sources
             full_report += "\n\n### Citations\n"
-            # sources = {}
-            for citation in response.citations:
-                doc = state['curated_data'].get(citation.source_id)
+
+        for citation in response.citations:
+            doc = state['curated_data'].get(citation.source_id)
+            doc.setdefault("supporting_quotes", []).append(citation.quote)
+
+            if include_citations:
                 full_report += f"- [{doc.get('title', citation.source_id)}]({citation.source_id}): \"{citation.quote}\"\n"
 
         print("Genereated report:\n",full_report)
-        return {"report": full_report}
+        return {"report": full_report, "curated_data": state['curated_data']}
