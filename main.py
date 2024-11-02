@@ -9,10 +9,7 @@ load_dotenv('.env')
 async def main():
     master_agent = MasterAgent()
     query = input("What do you want to research?\n")
-    task = {
-        "query": query
-    }
-    await master_agent.run(task)
+    await master_agent.run(query)
 
 
 if __name__ == "__main__":

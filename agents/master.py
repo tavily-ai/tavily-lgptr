@@ -1,21 +1,19 @@
 from langgraph.graph import StateGraph, END
 
-from .generate import GenerateAgent
-from .search import SearchAgent
-from .curate import CurateAgent
-from .write import WriteAgent
-from .memory.research import ResearchState
+from . import GenerateAgent, SearchAgent, CurateAgent, WriteAgent, Config, ResearchState, InputState, OutputState
+
 
 class MasterAgent:
     def __init__(self):
+        cfg = Config()
         # Initialize agents
         generate_agent = GenerateAgent()
-        search_agent = SearchAgent()
-        curate_agent = CurateAgent()
+        search_agent = SearchAgent(cfg.MAX_SEARCH_QUERIES)
+        curate_agent = CurateAgent(cfg.MAX_CURATED_DOCS)
         write_agent = WriteAgent()
 
         # Define a Langchain graph
-        workflow = StateGraph(ResearchState)
+        workflow = StateGraph(ResearchState, input=InputState, output=OutputState)
 
         # Add nodes for each agent
         workflow.add_node('generate', generate_agent.run)
@@ -34,12 +32,12 @@ class MasterAgent:
 
         self.workflow = workflow
 
-    async def run(self, task: dict):
+    async def run(self, query: str):
         # compile the graph
         graph = self.workflow.compile()
 
         # just invoke
-        await graph.ainvoke({"task": task})
+        await graph.ainvoke({"query": query})
 
     def compile(self):
         # compile the graph and return it (for LangGraph Studio)

@@ -49,13 +49,16 @@ response:
             agent: Agent name
             agent_role_prompt: Agent role prompt
         """
-        query = state['task']['query']
+        query = state['query']
         messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=query)]
         try:
             response = await self.model.with_structured_output(GeneratorResponse).ainvoke(messages)
-            print(f"Generated {response.agent_name}")
-            print(f"Generated prompt: {response.agent_prompt}")
+            #print(f"Generated {response.agent_name}")
+            #print(f"Generated prompt: {response.agent_prompt}")
+            msgs = f"Generated {response.agent_name}\nGenerated prompt: {response.agent_prompt}"
+            print(msgs)
             return {
+                "messages": [msgs],
                 "agent":
                     {
                         "name": response.agent_name,
