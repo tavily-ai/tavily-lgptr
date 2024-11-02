@@ -23,12 +23,13 @@ class WriteAgent:
     def __init__(self):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4, max_tokens=8000)
 
-    def run(self, state: ResearchState, total_words: int = 500, include_citations=False):
+    def run(self, state: ResearchState, total_words: int = 500):
+        include_citations = state.get('include_citations', False)
         # TODO implement a general structure for the report (similar to the way it was done in GPT researcher"
-        print(f"✍️ Writing report for '{state['task']['query']}' ...")
+        print(f"✍️ Writing report for '{state['query']}' ...")
         prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
         {state['agent']['prompt']}\n
-        As an expert researcher, your current task is to write a report on the following query: {state['task']['query']}
+        As an expert researcher, your current task is to write a report on the following query: {state['query']}
         The report should focus on the answer to the query, should be well structured, informative, 
         in-depth, and comprehensive, with facts and numbers if available and at least {total_words} words.\n
         Below are the documents you should base your answer on:\n{state['curated_data']}

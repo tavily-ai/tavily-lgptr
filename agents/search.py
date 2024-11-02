@@ -91,7 +91,7 @@ class SearchAgent:
 
     async def run(self, state: ResearchState):
         print("In search agent")
-        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['task']['query'])
+        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['query'])
         search_results = await self.tavily_search(sub_queries)
         search_results.extend(initial_search_results)
         # Save search results

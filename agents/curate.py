@@ -27,7 +27,7 @@ class CurateAgent:
         system_prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
         {state['agent']['prompt']}.\n
         Your current task is to review a list of documents and select the most relevant, trusted, and reliable sources 
-        related to the following research task: {state['task']['query']}.\n
+        related to the following research task: {state['query']}.\n
         
         Please follow these guidelines:
         1. Evaluate each source based on its relevance to the query, credibility, and reliability.

@@ -4,7 +4,7 @@ from .curate import CurateAgent
 from .write import WriteAgent
 
 from .config.config import Config
-from .memory.research import ResearchState
+from .memory.research import ResearchState, InputState, OutputState
 
 __all__ = [
     "GenerateAgent", "SearchAgent", "CurateAgent", "WriteAgent", "Config", "ResearchState"
