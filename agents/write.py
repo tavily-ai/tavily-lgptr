@@ -20,10 +20,14 @@ class QuotedAnswer(BaseModel):
 
 
 class WriteAgent:
-    def __init__(self):
+    def __init__(self, research_depth):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4, max_tokens=8000)
+        self.research_depth = research_depth
 
     def run(self, state: ResearchState, total_words: int = 500):
+        if self.research_depth == "basic":
+            total_words //= 2
+
         include_citations = state.get('include_citations', False)
         # TODO implement a general structure for the report (similar to the way it was done in GPT researcher"
         print(f"✍️ Writing report for '{state['query']}' ...")

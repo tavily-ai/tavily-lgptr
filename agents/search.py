@@ -24,10 +24,11 @@ class TavilySearchInput(BaseModel):
 
 
 class SearchAgent:
-    def __init__(self, max_queries):
+    def __init__(self, max_queries, research_depth):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4)
         self.tavily_client = AsyncTavilyClient()
         self.MAX_QUERIES = max_queries
+        self.research_depth = research_depth
 
     async def tavily_search(self, sub_queries: List[TavilyQuery]):
         """Perform searches for each sub-query using the Tavily search tool concurrently."""
@@ -39,7 +40,7 @@ class SearchAgent:
                 query_with_date = f"{itm.query} {datetime.now().strftime('%m-%Y')}"
                 # Attempt to perform the search
                 response = await self.tavily_client.search(query=query_with_date, topic=itm.topic, days=itm.days,
-                                                           max_results=10)
+                                                           max_results=10, search_depth=self.research_depth)
                 return response['results']
             except Exception as e:
                 # Handle any exceptions, log them, and return an empty list
@@ -66,21 +67,34 @@ class SearchAgent:
         :param query: The original user query.
         :return: A list of search queries (structured in a list of TavilyQuery instances).
         """
+        
+        # Adjust MAX_QUERIES based on research depth
+        effective_max_queries = self.MAX_QUERIES // 2 if self.research_depth == "basic" else self.MAX_QUERIES
+        
+        initial_search_results = []
+        if self.research_depth == "advanced":
+            initial_search_results = await self.tavily_search([TavilyQuery(query=query, topic='general')])
 
-        initial_search_results = await self.tavily_search([TavilyQuery(query=query, topic='general')])
-
+        # Base prompt without context
         system_prompt = f"""
             {agent['prompt']}
-            You are a tasked tasked with generating {self.MAX_QUERIES-1} search queries to find relevant information for the following task: "{query}".
+            You are tasked with generating {effective_max_queries-1} search queries to find relevant information for the following task: "{query}".
+            
+            Assume the current date is {datetime.now(timezone.utc).strftime('%B %d, %Y')} if required.
+        """
+        
+        # Add context for advanced research
+        if self.research_depth == "advanced":
+            system_prompt += f"""
             Context: {initial_search_results}
             
             Use this context to inform and refine your search queries. 
             The context provides real-time web information that can help you generate more specific and relevant queries. 
             Consider any current events, recent developments, or specific details mentioned in the context that could enhance the search queries.
-            
-            Assume the current date is {datetime.now(timezone.utc).strftime('%B %d, %Y')} if required.
-            The response should contain ONLY the list of search queries.
-        """
+            """
+        
+        system_prompt += "\nThe response should contain ONLY the list of search queries."
+        
         messages = [SystemMessage(content=system_prompt)]
         try:
             response = await self.model.with_structured_output(TavilySearchInput).ainvoke(messages)

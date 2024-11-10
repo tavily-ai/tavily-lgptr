@@ -4,6 +4,15 @@ from langchain_core.messages import SystemMessage, HumanMessage
 
 from .memory.research import ResearchState
 
+DEFAULT_AGENT = {
+    "agent":
+        {
+            "name": "Default Agent",
+            "prompt": """You are an AI critical thinker research assistant.
+                      "Your sole purpose is to write well written,critically acclaimed, objective and structured reports on given text."""
+        }
+}
+
 
 class GeneratorResponse(BaseModel):
     agent_name: str
@@ -13,8 +22,9 @@ class GeneratorResponse(BaseModel):
 class GenerateAgent:
     """Agent responsible for generating an agent based on research task"""
 
-    def __init__(self):
+    def __init__(self, research_depth):
         self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        self.research_depth = research_depth
         self.system_prompt = """
 This task involves researching a given topic, regardless of its complexity or the availability of a definitive answer. The research is conducted by a specific agent, defined by its type and role, with each agent requiring distinct instructions.
 The server is determined by the field of the topic and the specific name of the agent that could be utilized to research the topic provided. Agents are categorized by their area of expertise, and each agent type is associated with a corresponding emoji.
@@ -52,11 +62,11 @@ response:
         query = state['query']
         messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=query)]
         try:
+            if self.research_depth == "basic":
+                return DEFAULT_AGENT
+
             response = await self.model.with_structured_output(GeneratorResponse).ainvoke(messages)
-            #print(f"Generated {response.agent_name}")
-            #print(f"Generated prompt: {response.agent_prompt}")
             msgs = f"Generated {response.agent_name}\nGenerated prompt: {response.agent_prompt}"
-            print(msgs)
             return {
                 "messages": [msgs],
                 "agent":
@@ -66,12 +76,5 @@ response:
                     }
             }
         except Exception as e:
-            print("⚠️ Error in reading GeneratorAgent response, returning Default Agent")
-            return {
-                "agent":
-                    {
-                        "name": "Default Agent",
-                        "prompt": """You are an AI critical thinker research assistant.
-                                  "Your sole purpose is to write well written,critically acclaimed, objective and structured reports on given text."""
-                    }
-            }
+            print(f"⚠️ Error in reading GeneratorAgent response, returning Default Agent. Error: {e}")
+            return DEFAULT_AGENT
