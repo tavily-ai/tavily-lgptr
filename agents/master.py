@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph, END
+import time
 
 from . import GenerateAgent, SearchAgent, CurateAgent, WriteAgent, Config, ResearchState, InputState, OutputState
 
@@ -7,10 +8,10 @@ class MasterAgent:
     def __init__(self):
         cfg = Config()
         # Initialize agents
-        generate_agent = GenerateAgent()
-        search_agent = SearchAgent(cfg.MAX_SEARCH_QUERIES)
-        curate_agent = CurateAgent(cfg.MAX_CURATED_DOCS)
-        write_agent = WriteAgent()
+        generate_agent = GenerateAgent(cfg.RESEARCH_DEPTH)
+        search_agent = SearchAgent(cfg.MAX_SEARCH_QUERIES, cfg.RESEARCH_DEPTH)
+        curate_agent = CurateAgent(cfg.MAX_CURATED_DOCS, cfg.RESEARCH_DEPTH)
+        write_agent = WriteAgent(cfg.RESEARCH_DEPTH)
 
         # Define a Langchain graph
         workflow = StateGraph(ResearchState, input=InputState, output=OutputState)
@@ -33,11 +34,18 @@ class MasterAgent:
         self.workflow = workflow
 
     async def run(self, query: str):
+        start_time = time.time()
+        print(f"Starting research process for query: {query}")
+
         # compile the graph
         graph = self.workflow.compile()
 
-        # just invoke
+        # invoke the graph
         await graph.ainvoke({"query": query})
+
+        end_time = time.time()
+        duration = end_time - start_time
+        print(f"Research process completed in {duration:.2f} seconds")
 
     def compile(self):
         # compile the graph and return it (for LangGraph Studio)
