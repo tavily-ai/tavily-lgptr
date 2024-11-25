@@ -7,11 +7,12 @@ from . import GenerateAgent, SearchAgent, CurateAgent, WriteAgent, Config, Resea
 class MasterAgent:
     def __init__(self):
         cfg = Config()
+
         # Initialize agents
-        generate_agent = GenerateAgent(cfg.RESEARCH_DEPTH)
-        search_agent = SearchAgent(cfg.MAX_SEARCH_QUERIES, cfg.RESEARCH_DEPTH)
-        curate_agent = CurateAgent(cfg.MAX_CURATED_DOCS, cfg.RESEARCH_DEPTH)
-        write_agent = WriteAgent(cfg.RESEARCH_DEPTH)
+        generate_agent = GenerateAgent(cfg)
+        search_agent = SearchAgent(cfg)
+        curate_agent = CurateAgent(cfg)
+        write_agent = WriteAgent(cfg)
 
         # Define a Langchain graph
         workflow = StateGraph(ResearchState, input=InputState, output=OutputState)

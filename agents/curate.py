@@ -17,20 +17,16 @@ class TavilyExtractInput(BaseModel):
                                                            "ordered by relevance, trustworthiness, and reliability")
 
 class CurateAgent:
-    def __init__(self, max_docs, research_depth):
+    def __init__(self, cfg):
         self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         self.tavily_client = AsyncTavilyClient()
-        self.MAX_DOCS = max_docs
-        self.research_depth = research_depth
+        self.cfg = cfg
 
     async def run(self, state: ResearchState):
         print("In curate agent")
-        curated_data = state['research_data']
-        # If research_depth is basic, skip ranking and use all sources
-        if self.research_depth == "basic":
-            print("Basic research mode - skipping ranking")
-            urls = list(curated_data.keys())
-        elif self.research_depth == "advanced":
+        state = state.model_dump()
+        research_depth = state.get('research_depth', self.cfg.RESEARCH_DEPTH)
+        if research_depth == "advanced":
             # Original ranking logic for detailed research
             system_prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n
             {state['agent']['prompt']}.\n
@@ -43,7 +39,7 @@ class CurateAgent:
                 and the recency of the information.
             3. Rank the sources in order of their overall quality and relevance, with 1 being the highest rank.
             4. Provide a brief reason for each ranking.
-            5. Select up to {self.MAX_DOCS} of the best sources.
+            5. Select up to {self.cfg.MAX_CURATED_DOCS} of the best sources.
 
             Here is the list of documents gathered for your review:\n{state['research_data']}\n\n
             
@@ -59,6 +55,12 @@ class CurateAgent:
             curated_data = {source.url: state['research_data'][source.url] for source in
                             ranked_sources.ranked_sources if source.url in state['research_data']}
             urls = [source.url for source in ranked_sources.ranked_sources]
+        else:
+            # If research_depth is basic, skip ranking and use all sources (without extracting sources)
+            print("Basic research mode - skipping ranking")
+            curated_data = state['research_data']
+            # urls = list(curated_data.keys())
+            urls = []
 
         msg = ""
         # Rest of the code remains the same, but use urls list instead of ranked_sources

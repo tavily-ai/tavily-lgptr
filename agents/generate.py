@@ -22,9 +22,9 @@ class GeneratorResponse(BaseModel):
 class GenerateAgent:
     """Agent responsible for generating an agent based on research task"""
 
-    def __init__(self, research_depth):
+    def __init__(self, cfg):
         self.model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-        self.research_depth = research_depth
+        self.cfg = cfg
         self.system_prompt = """
 This task involves researching a given topic, regardless of its complexity or the availability of a definitive answer. The research is conducted by a specific agent, defined by its type and role, with each agent requiring distinct instructions.
 The server is determined by the field of the topic and the specific name of the agent that could be utilized to research the topic provided. Agents are categorized by their area of expertise, and each agent type is associated with a corresponding emoji.
@@ -53,16 +53,15 @@ response:
     async def run(self, state: ResearchState):
         """
         Chooses the agent automatically
-        Args:
-            query: original query
         Returns:
             agent: Agent name
             agent_role_prompt: Agent role prompt
         """
+        state = state.model_dump()
         query = state['query']
         messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=query)]
         try:
-            if self.research_depth == "basic":
+            if state.get('research_depth',self.cfg.RESEARCH_DEPTH) != "advanced":
                 return DEFAULT_AGENT
 
             response = await self.model.with_structured_output(GeneratorResponse).ainvoke(messages)
