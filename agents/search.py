@@ -38,9 +38,9 @@ class SearchAgent:
                 # Add date to the query as we need the most recent results
                 query_with_date = f"{itm.query} {datetime.now().strftime('%m-%Y')}"
                 # Attempt to perform the search
-                response = await self.tavily_client.search(query=query_with_date, topic=itm.topic, days=itm.days,
+                tavily_response = await self.tavily_client.search(query=query_with_date, topic=itm.topic, days=itm.days,
                                                            max_results=10)
-                return response['results']
+                return tavily_response['results']
             except Exception as e:
                 # Handle any exceptions, log them, and return an empty list
                 print(f"Error occurred during search for query '{itm.query}': {str(e)}")
@@ -105,7 +105,7 @@ class SearchAgent:
     async def run(self, state: ResearchState):
         print("In search agent")
         state = state.model_dump()
-        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['query'], state.get('research_depth',self.cfg.RESEARCH_DEPTH))
+        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['query'], state['research_depth'])
         search_results = await self.tavily_search(sub_queries)
         search_results.extend(initial_search_results)
         # Save search results

@@ -25,7 +25,7 @@ class CurateAgent:
     async def run(self, state: ResearchState):
         print("In curate agent")
         state = state.model_dump()
-        research_depth = state.get('research_depth', self.cfg.RESEARCH_DEPTH)
+        research_depth = state.get('research_depth')
         if research_depth == "advanced":
             # Original ranking logic for detailed research
             system_prompt = f"""Today's date is {datetime.now().strftime('%d/%m/%Y')}.\n

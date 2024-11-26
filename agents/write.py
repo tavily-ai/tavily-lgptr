@@ -27,7 +27,7 @@ class WriteAgent:
     def run(self, state: ResearchState, total_words = 500):
         state = state.model_dump()
 
-        if state.get('research_depth',self.cfg.RESEARCH_DEPTH) != "advanced":
+        if state.get('research_depth') == "basic":
             total_words //= 2
 
         include_citations = state.get('include_citations', False)

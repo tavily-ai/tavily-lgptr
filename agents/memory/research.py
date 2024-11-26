@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import TypedDict, Dict, Union, List, Annotated, Required, NotRequired
+from typing import TypedDict, Dict, Union, List, Annotated, Required, NotRequired, Literal
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 
@@ -22,7 +22,7 @@ from langgraph.graph import add_messages
 
 class InputState(BaseModel):
     query: str
-    research_depth: str = "basic"
+    research_depth: Literal["basic", "advanced"] = "basic"  # Enforce specific values
     include_citations: bool = False
 
 class OutputState(BaseModel):

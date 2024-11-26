@@ -8,8 +8,8 @@ DEFAULT_AGENT = {
     "agent":
         {
             "name": "Default Agent",
-            "prompt": """You are an AI critical thinker research assistant.
-                      "Your sole purpose is to write well written,critically acclaimed, objective and structured reports on given text."""
+            "prompt": "You are an AI critical thinker research assistant.\n"
+                      "Your sole purpose is to write well written,critically acclaimed, objective and structured reports on given text."
         }
 }
 
@@ -61,7 +61,7 @@ response:
         query = state['query']
         messages = [SystemMessage(content=self.system_prompt), HumanMessage(content=query)]
         try:
-            if state.get('research_depth',self.cfg.RESEARCH_DEPTH) != "advanced":
+            if state.get('research_depth') == "basic":
                 return DEFAULT_AGENT
 
             response = await self.model.with_structured_output(GeneratorResponse).ainvoke(messages)
