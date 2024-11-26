@@ -63,7 +63,7 @@ class CurateAgent:
             urls = []
 
         msg = ""
-        # Rest of the code remains the same, but use urls list instead of ranked_sources
+        # Function to Extract Content from up to 20 urls
         async def process_batch(url_batch):
             batch_msg = ""
             try:
