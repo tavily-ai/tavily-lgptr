@@ -6,5 +6,4 @@ class Config:
         """
         self.MAX_SEARCH_QUERIES = 4  # Max search queries to run (including initial search query)
         self.MAX_CURATED_DOCS = 10
-        self.RESEARCH_DEPTH = "basic"  # "basic" or "advanced"
 

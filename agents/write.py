@@ -20,12 +20,14 @@ class QuotedAnswer(BaseModel):
 
 
 class WriteAgent:
-    def __init__(self, research_depth):
+    def __init__(self, cfg):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4, max_tokens=8000)
-        self.research_depth = research_depth
+        self.cfg = cfg
 
-    def run(self, state: ResearchState, total_words: int = 500):
-        if self.research_depth == "basic":
+    def run(self, state: ResearchState, total_words = 500):
+        state = state.model_dump()
+
+        if state.get('research_depth') == "basic":
             total_words //= 2
 
         include_citations = state.get('include_citations', False)
@@ -39,21 +41,24 @@ class WriteAgent:
         Below are the documents you should base your answer on:\n{state['curated_data']}
         """
 
-        messages = [SystemMessage(content=prompt)]
-        response = self.model.with_structured_output(QuotedAnswer).invoke(messages)
-        full_report = response.answer
+        try:
+            messages = [SystemMessage(content=prompt)]
+            response = self.model.with_structured_output(QuotedAnswer).invoke(messages)
+            full_report = response.answer
 
-        # Add Citations Section to the report and Save quotes used by the agent to support their answer
-        if include_citations:
-            full_report += "\n\n### Citations\n"
-
-        for citation in response.citations:
-            doc = state['curated_data'].get(citation.source_id, {})
-            doc.setdefault("supporting_quotes", []).append(citation.quote)
-
+            # Add Citations Section to the report and Save quotes used by the agent to support their answer
             if include_citations:
-                full_report += f"- [{doc.get('title', citation.source_id)}]({citation.source_id}): \"{citation.quote}\"\n"
+                full_report += "\n\n### Citations\n"
 
-        print("Generated report:\n", full_report)
+            for citation in response.citations:
+                doc = state['curated_data'].get(citation.source_id, {})
+                # doc.setdefault("supporting_quotes", []).append(citation.quote)
 
-        return {"report": full_report, "curated_data": state['curated_data']}
+                if include_citations:
+                    full_report += f"- [{doc.get('title', citation.source_id)}]({citation.source_id}): \"{citation.quote}\"\n"
+
+            print("Generated report:\n", full_report)
+
+            return {"report": full_report, "curated_data": state['curated_data']}
+        except Exception as e:
+            print(f"⚠️ Error Generating Report: {e}")

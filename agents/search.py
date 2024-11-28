@@ -24,11 +24,10 @@ class TavilySearchInput(BaseModel):
 
 
 class SearchAgent:
-    def __init__(self, max_queries, research_depth):
+    def __init__(self, cfg):
         self.model = ChatOpenAI(model="gpt-4o", temperature=0.4)
         self.tavily_client = AsyncTavilyClient()
-        self.MAX_QUERIES = max_queries
-        self.research_depth = research_depth
+        self.cfg = cfg
 
     async def tavily_search(self, sub_queries: List[TavilyQuery]):
         """Perform searches for each sub-query using the Tavily search tool concurrently."""
@@ -39,9 +38,9 @@ class SearchAgent:
                 # Add date to the query as we need the most recent results
                 query_with_date = f"{itm.query} {datetime.now().strftime('%m-%Y')}"
                 # Attempt to perform the search
-                response = await self.tavily_client.search(query=query_with_date, topic=itm.topic, days=itm.days,
-                                                           max_results=10, search_depth=self.research_depth)
-                return response['results']
+                tavily_response = await self.tavily_client.search(query=query_with_date, topic=itm.topic, days=itm.days,
+                                                           max_results=10)
+                return tavily_response['results']
             except Exception as e:
                 # Handle any exceptions, log them, and return an empty list
                 print(f"Error occurred during search for query '{itm.query}': {str(e)}")
@@ -59,7 +58,7 @@ class SearchAgent:
 
         return search_results
 
-    async def generate_search_queries(self, agent, query):
+    async def generate_search_queries(self, agent, query, research_depth):
         """
         Generate search queries using the agent's persona and the initial query.
 
@@ -69,10 +68,10 @@ class SearchAgent:
         """
         
         # Adjust MAX_QUERIES based on research depth
-        effective_max_queries = self.MAX_QUERIES // 2 if self.research_depth == "basic" else self.MAX_QUERIES
+        effective_max_queries = self.cfg.MAX_SEARCH_QUERIES // 2 if research_depth == "basic" else self.cfg.MAX_SEARCH_QUERIES
         
         initial_search_results = []
-        if self.research_depth == "advanced":
+        if research_depth == "advanced":
             initial_search_results = await self.tavily_search([TavilyQuery(query=query, topic='general')])
 
         # Base prompt without context
@@ -84,7 +83,7 @@ class SearchAgent:
         """
         
         # Add context for advanced research
-        if self.research_depth == "advanced":
+        if research_depth == "advanced":
             system_prompt += f"""
             Context: {initial_search_results}
             
@@ -105,7 +104,8 @@ class SearchAgent:
 
     async def run(self, state: ResearchState):
         print("In search agent")
-        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['query'])
+        state = state.model_dump()
+        sub_queries, initial_search_results = await self.generate_search_queries(state['agent'], state['query'], state['research_depth'])
         search_results = await self.tavily_search(sub_queries)
         search_results.extend(initial_search_results)
         # Save search results
