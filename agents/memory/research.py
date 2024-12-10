@@ -3,31 +3,24 @@ from typing import TypedDict, Dict, Union, List, Annotated, Required, NotRequire
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 
-
-# class InputState(TypedDict):
-#     query: str
-#     research_depth: NotRequired[str]
-#     include_citations: bool
-#
-#
-# class OutputState(TypedDict):
-#     report: str
-#
-#
-# class ResearchState(InputState, OutputState):
-#     agent: dict
-#     research_data: Dict[str, Dict[str, Union[str, float]]]
-#     curated_data: Dict[str, Dict[str, Union[str, float]]]
-#     messages: Annotated[list[AnyMessage], add_messages]  # TODO: use this field for streaming msgs from agent?
-
 class InputState(BaseModel):
-    query: str
-    research_depth: Literal["basic", "advanced"] = "basic"  # Enforce specific values
-    include_citations: bool = False
+    query: str = Field(
+        description="The research query to be used for generating the report.",
+        examples=["What are the benefits of renewable energy?", "Impact of climate change on biodiversity"],
+    )
+    research_depth: Literal["basic", "advanced"] = Field(
+        default="basic",
+        description="The research depth of the report. 'basic' provides an overview, while 'advanced' dives deeper into the topic. Default is 'basic'",
+        examples=["basic", "advanced"],
+    )
+    include_citations: bool = Field(
+        default=False,
+        description="Whether to include cited sources and supporting quotes from those sources at the end of the report. Default is False.",
+        examples=[True, False],
+    )
 
 class OutputState(BaseModel):
     report: str = ""
-
 
 class ResearchState(InputState, OutputState):
     agent: dict = Field(default_factory=dict)
